@@ -561,9 +561,8 @@ Todas las capturas se encuentran en la carpeta [`evidencias/`](evidencias/).
 
 ## 12. Video Demostrativo
 
-🎥 **[Ver en YouTube — enlace pendiente](#)**
+🎥 **[(https://drive.google.com/drive/folders/1Y4LU0Q5ffsAG3cYPHYRf1oKEL1oHVFJp?usp=sharing)**
 
-**Duración estimada:** < 8 minutos
 
 ---
 
