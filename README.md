@@ -128,12 +128,14 @@ Implementar y verificar una infraestructura de acceso remoto y autenticación ce
 
 ### 4.3 Publicar una aplicación como RemoteApp
 
-📸 *Ver captura: [evidencias/02_remoteapp_coleccion.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/02b_remoteapp_app_publicada.png](#11-capturas-de-pantalla)*
 
 1. Dentro de la colección `RemoteApp-ITLA` → clic en `Tasks` → **Publish RemoteApp Programs**.
 2. En la lista de programas, seleccionar la aplicación a publicar (ej. Internet Explorer / Edge para abrir la página IIS).
 3. Clic en **Next** → **Publish** → **Close**.
 4. La aplicación aparece en la colección lista para ser accedida.
+
+> ℹ️ **Nota de evidencia:** esta captura es distinta a la 4.2 — toma la vista de la colección **después** de que la app ya quedó publicada (la tabla de "RemoteApp Programs" con al menos una fila), no la misma captura de cuando solo existía la colección vacía.
 
 ---
 
@@ -143,13 +145,13 @@ Implementar y verificar una infraestructura de acceso remoto y autenticación ce
 
 ### 5.1 Instalar el módulo RD Web Client
 
-📸 *Ver captura: [evidencias/03_webclient_iis.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/03a_webclient_modulo_instalado.png](#11-capturas-de-pantalla)*
 
 Abrir **PowerShell como Administrador** en el Windows Server y ejecutar:
 
 ```powershell
 # Instalar el módulo de gestión del Web Client
-Install-Module -Name RDWebClientManagement -Force
+Install-Module -Name RDWebClientManagement -Force -AcceptLicense
 
 # Importar el módulo
 Import-Module RDWebClientManagement
@@ -158,23 +160,35 @@ Import-Module RDWebClientManagement
 Install-RDWebClientPackage
 ```
 
+> ℹ️ **Nota de evidencia:** captura la salida de consola de estos tres comandos — específicamente el momento en que `Install-RDWebClientPackage` termina sin errores. Este es un paso de consola, distinto al de 5.2.
+
 ---
 
 ### 5.2 Configurar el certificado para el Web Client
 
-📸 *Ver captura: [evidencias/03_webclient_iis.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/03b_webclient_cert_importado.png](#11-capturas-de-pantalla)*
 
 ```powershell
-# Exportar el certificado del RD Broker e importarlo en el Web Client
-# (usar el certificado autofirmado del servidor en entornos de lab)
-Import-RDWebClientBrokerCert "C:\ruta\al\certificado.cer"
+Import-Module WebAdministration
+
+# Obtener el certificado que está en uso en el binding SSL 443
+$thumbprintEnUso = (Get-Item IIS:\SslBindings\0.0.0.0!443).Thumbprint
+$cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object {$_.Thumbprint -eq $thumbprintEnUso}
+Export-Certificate -Cert $cert -FilePath "C:\certificado\certificado.cer"
+
+# Importar el certificado del RD Broker en el Web Client
+Import-RDWebClientBrokerCert "C:\certificado\certificado.cer"
 ```
 
 > En entornos de laboratorio se puede usar el certificado autofirmado generado durante la instalación de RDS. En producción se recomienda un certificado de una CA confiable.
+>
+> ℹ️ **Nota de evidencia:** esta captura muestra la salida de `Import-RDWebClientBrokerCert` sin errores — un comando y un momento distintos a los de 5.1. No reutilizar la misma imagen de esa sección.
 
 ---
 
 ### 5.3 Publicar el Web Client
+
+📸 *Ver captura: [evidencias/03c_webclient_publicado.png](#11-capturas-de-pantalla)*
 
 ```powershell
 Publish-RDWebClientPackage -Type Production -Latest
@@ -185,6 +199,8 @@ Verificar el acceso desde el navegador:
 ```
 https://<IP-Servidor>/RDWeb/webclient
 ```
+
+> ℹ️ **Nota de evidencia:** esta captura sí puede combinar dos cosas porque **ocurren en la misma pantalla al mismo tiempo**: el navegador mostrando el portal `/RDWeb/webclient` cargado correctamente. Si quieres, puedes tomar también la salida de consola de `Publish-RDWebClientPackage` como una imagen separada (`03c`) y el navegador como otra (`03d`), ya que técnicamente son dos momentos distintos (consola vs. navegador).
 
 ---
 
@@ -198,11 +214,13 @@ https://<IP-Servidor>/RDWeb/webclient
 2. Seleccionar rol: **Web Server (IIS)**.
 3. Instalar con las características por defecto → **Install**.
 
+> ℹ️ Esta sí puede reutilizar la captura 01 legítimamente: si el dashboard de Server Manager muestra los tres roles (RDS, IIS, NPS) juntos en una sola vista, es una sola pantalla real que cubre las tres secciones a la vez — no es reciclaje, es la misma evidencia visible simultáneamente.
+
 ---
 
 ### 6.2 Crear la página personalizada
 
-📸 *Ver captura: [evidencias/03_webclient_iis.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/06a_iis_index_html_editor.png](#11-capturas-de-pantalla)*
 
 1. Abrir el **Explorador de archivos** → navegar a `C:\inetpub\wwwroot\`.
 2. Crear un nuevo archivo `index.html` con el siguiente contenido:
@@ -248,11 +266,15 @@ https://<IP-Servidor>/RDWeb/webclient
 </html>
 ```
 
-3. Guardar el archivo.
+3. Guardar el archivo **en codificación UTF-8** (importante para que el emoji y los acentos no se vean rotos en el navegador).
+
+> ℹ️ **Nota de evidencia:** captura del archivo abierto en el editor (Bloc de notas/VS Code) mostrando el contenido guardado — distinta a la del navegador (6.3).
 
 ---
 
 ### 6.3 Verificar IIS en el navegador local
+
+📸 *Ver captura: [evidencias/06b_iis_pagina_localhost.png](#11-capturas-de-pantalla)*
 
 Abrir el navegador en el servidor y navegar a:
 
@@ -268,7 +290,7 @@ Debe mostrarse la página personalizada con los datos del laboratorio.
 
 ### 7.1 Publicar el navegador como RemoteApp apuntando a IIS
 
-📸 *Ver captura: [evidencias/02_remoteapp_coleccion.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/07_remoteapp_edge_publicado.png](#11-capturas-de-pantalla)*
 
 1. En **Server Manager** → `Remote Desktop Services` → colección `RemoteApp-ITLA`.
 2. Clic en `Tasks` → **Publish RemoteApp Programs**.
@@ -281,9 +303,13 @@ Debe mostrarse la página personalizada con los datos del laboratorio.
 
 > Alternativamente, crear un acceso directo `.bat` que lance el navegador hacia `http://localhost` y publicar ese script como RemoteApp.
 
+> ℹ️ **Nota de evidencia:** esta captura es distinta a la 4.3 (esa era Notepad/app genérica) — aquí debe verse específicamente el navegador con el argumento `http://localhost` ya configurado en sus Propiedades.
+
 ---
 
 ### 7.2 Verificar desde el cliente
+
+📸 *Ver captura: [evidencias/05_cliente_rdweb_iis.png](#11-capturas-de-pantalla)*
 
 Acceder al portal RD Web desde el cliente:
 
@@ -310,7 +336,7 @@ El icono del navegador/RemoteApp publicado debe aparecer. Al hacer clic, abre la
 
 ### 8.2 Registrar NPS en Active Directory
 
-📸 *Ver captura: [evidencias/04_nps_config.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/04a_nps_registrado_ad.png](#11-capturas-de-pantalla)*
 
 1. Abrir **NPS** desde `Tools` → `Network Policy Server`.
 2. Clic derecho en el nodo raíz **NPS (Local)** → **Register server in Active Directory**.
@@ -322,7 +348,7 @@ El icono del navegador/RemoteApp publicado debe aparecer. Al hacer clic, abre la
 
 ### 8.3 Registrar el Router como cliente RADIUS
 
-📸 *Ver captura: [evidencias/04_nps_config.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/04b_nps_radius_client.png](#11-capturas-de-pantalla)*
 
 1. En NPS → expandir **RADIUS Clients and Servers** → clic derecho en **RADIUS Clients** → **New**.
 2. Configurar:
@@ -340,7 +366,7 @@ El icono del navegador/RemoteApp publicado debe aparecer. Al hacer clic, abre la
 
 ### 8.4 Crear grupos de usuarios en Active Directory
 
-📸 *Ver captura: [evidencias/04_nps_config.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/04c_ad_grupos_creados.png](#11-capturas-de-pantalla)*
 
 Abrir **Active Directory Users and Computers** → `Users` → crear dos grupos:
 
@@ -355,7 +381,7 @@ Agregar los usuarios correspondientes a cada grupo.
 
 ### 8.5 Crear política de red — Nivel 15
 
-📸 *Ver captura: [evidencias/04_nps_config.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/04d_nps_politica_nivel15.png](#11-capturas-de-pantalla)*
 
 1. En NPS → **Policies** → **Network Policies** → clic derecho → **New**.
 2. Nombre de la política: `Acceso-Nivel15`.
@@ -367,11 +393,13 @@ Agregar los usuarios correspondientes a cada grupo.
    - Value: `shell:priv-lvl=15`
 6. Finalizar.
 
+> ⚠️ Revisar también el atributo estándar **Service-Type**: si el asistente lo dejó en `Framed` (valor por defecto pensado para VPN), cámbialo a `Login` y elimina `Framed-Protocol: PPP` si aparece — de lo contrario el SSH puede fallar con "This line may not run PPP".
+
 ---
 
 ### 8.6 Crear política de red — Nivel 1
 
-📸 *Ver captura: [evidencias/04_nps_config.png](#11-capturas-de-pantalla)*
+📸 *Ver captura: [evidencias/04e_nps_politica_nivel1.png](#11-capturas-de-pantalla)*
 
 1. Repetir el proceso anterior con nombre: `Acceso-Nivel1`.
 2. **Conditions** → `Windows Groups` → agregar `VPN-Nivel1`.
@@ -382,6 +410,10 @@ Agregar los usuarios correspondientes a cada grupo.
 4. Finalizar.
 
 > El atributo VSA `shell:priv-lvl=15` indica a IOS que el usuario autenticado debe recibir nivel de privilegio 15 (acceso completo). El valor `1` otorga solo acceso de usuario básico.
+>
+> ⚠️ Aplica aquí también el mismo ajuste de **Service-Type → Login** y eliminar `Framed-Protocol` descrito en 8.5.
+
+> ℹ️ **Resumen de evidencia NPS:** si prefieres una sola captura consolidada en vez de cinco separadas (8.2 a 8.6), es válido **solo si** tomas la vista del árbol de NPS con el cliente RADIUS y ambas políticas ya creadas, todos visibles a la vez en el panel de "Network Policies" — eso sí es una sola pantalla real. Lo que no es válido es usar una captura de un paso para "representar" otro paso que ocurrió en un momento distinto.
 
 ---
 
@@ -399,7 +431,7 @@ Agregar los usuarios correspondientes a cada grupo.
 username admin privilege 15 secret Admin2025ITLA
 username user1 privilege 1 secret User2025ITLA
 
-! ── Habilitar AAA ────────────────────────────────────────────
+! ── Habilitar AAA (debe ir antes de "radius server") ─────────
 aaa new-model
 
 ! ── Servidor RADIUS (NPS en Windows Server) ─────────────────
@@ -434,9 +466,13 @@ ip ssh version 2
 ! show aaa sessions
 ```
 
+> ⚠️ Si el cliente SSH da `Unable to negotiate... no matching cipher found`, es porque IOS antiguos solo ofrecen cifrados CBC deshabilitados por defecto en clientes modernos. Conectar forzando el cifrado: `ssh -c aes128-cbc usuario@IP-Router`.
+
 ---
 
 ### 9.2 Verificar estado del servidor RADIUS
+
+📸 *Ver captura: [evidencias/09a_show_aaa_servers.png](#11-capturas-de-pantalla)*
 
 ```cisco
 Router# show aaa servers
@@ -449,6 +485,8 @@ RADIUS: id 1, priority 1, host <IP-WindowsServer>, auth-port 1812, acct-port 181
 ---
 
 ### 9.3 Comandos de debug para autenticación
+
+📸 *Ver captura: [evidencias/09b_debug_radius_output.png](#11-capturas-de-pantalla)*
 
 ```cisco
 ! Activar debug completo de AAA y RADIUS
@@ -475,6 +513,8 @@ Salida esperada al conectarse un usuario nivel 15 por SSH:
 *RADIUS/DECODE: cisco-av-pair = "shell:priv-lvl=15"
 *AAA/AUTHOR: Authorization successful - privilege level 15
 ```
+
+> ℹ️ **Nota de evidencia:** captura esta salida **mientras** el debug está corriendo y justo cuando el SSH se conecta — es un momento específico y distinto al de 9.2 (que es solo `show aaa servers` sin debug activo).
 
 ---
 
@@ -548,14 +588,26 @@ Todas las capturas se encuentran en la carpeta [`evidencias/`](evidencias/).
 
 | # | Captura | Sección | Descripción |
 |---|---|---|---|
-| 01 | [Roles instalados](evidencias/01_roles_instalados.png) | §4.1 / §6.1 / §8.1 | Server Manager mostrando los tres roles instalados: Remote Desktop Services, Web Server (IIS) y Network Policy Server. |
-| 02 | [Colección RemoteApp + app publicada](evidencias/02_remoteapp_coleccion.png) | §4.2 / §4.3 / §7.1 | Colección `RemoteApp-ITLA` con la aplicación publicada apuntando a `http://localhost`. |
-| 03 | [RD Web Client activo + página IIS](evidencias/03_webclient_iis.png) | §5.3 / §6.2 | Portal `https://<IP>/RDWeb/webclient` accesible en el navegador junto a la página IIS personalizada en `http://localhost`. |
-| 04 | [NPS — Cliente RADIUS + Políticas](evidencias/04_nps_config.png) | §8.3 / §8.5 / §8.6 | Consola NPS mostrando el cliente RADIUS `Router-Cisco` registrado y las dos políticas `Acceso-Nivel15` y `Acceso-Nivel1` con sus atributos VSA. |
-| 05 | [RemoteApp Web Client — página IIS](evidencias/05_cliente_rdweb_iis.png) | §10.1 | Navegador del cliente abriendo la página IIS personalizada a través del portal RD Web Client. |
-| 06 | [RemoteApp clásico — página IIS](evidencias/06_cliente_rdp_clasico.png) | §10.2 | Ventana RemoteApp clásica (archivo `.rdp`) mostrando la página IIS personalizada. |
-| 07 | [SSH Nivel 15](evidencias/07_ssh_nivel15.png) | §10.3 | Terminal del cliente con sesión SSH activa y prompt `Router#` — nivel de privilegio 15 asignado por RADIUS. |
-| 08 | [SSH Nivel 1](evidencias/08_ssh_nivel1.png) | §10.4 | Terminal del cliente con sesión SSH activa y prompt `Router>` — nivel de privilegio 1 asignado por RADIUS. |
+| 01 | `01_roles_instalados.png` | §4.1 / §6.1 / §8.1 | Server Manager mostrando los tres roles instalados a la vez: Remote Desktop Services, Web Server (IIS) y Network Policy Server. *(Consolidación válida: los tres son visibles en una sola pantalla real.)* |
+| 02 | `02_remoteapp_coleccion.png` | §4.2 | Colección `RemoteApp-ITLA` recién creada, sin apps publicadas todavía. |
+| 02b | `02b_remoteapp_app_publicada.png` | §4.3 | Misma colección, ahora con la aplicación de prueba ya publicada en la tabla. |
+| 03a | `03a_webclient_modulo_instalado.png` | §5.1 | Consola de PowerShell con `Install-RDWebClientPackage` completado sin errores. |
+| 03b | `03b_webclient_cert_importado.png` | §5.2 | Consola de PowerShell con `Import-RDWebClientBrokerCert` ejecutado correctamente. |
+| 03c | `03c_webclient_publicado.png` | §5.3 | Portal `https://<IP>/RDWeb/webclient` cargando correctamente en el navegador. |
+| 04a | `04a_nps_registrado_ad.png` | §8.2 | Confirmación de "Register server in Active Directory" en NPS. |
+| 04b | `04b_nps_radius_client.png` | §8.3 | Cliente RADIUS `Router-Cisco` visible en la lista de NPS. |
+| 04c | `04c_ad_grupos_creados.png` | §8.4 | Grupos `VPN-Nivel15` y `VPN-Nivel1` en Active Directory Users and Computers. |
+| 04d | `04d_nps_politica_nivel15.png` | §8.5 | Política `Acceso-Nivel15` con el atributo VSA `shell:priv-lvl=15`. |
+| 04e | `04e_nps_politica_nivel1.png` | §8.6 | Política `Acceso-Nivel1` con el atributo VSA `shell:priv-lvl=1`. |
+| 05 | `05_cliente_rdweb_iis.png` | §7.2 / §10.1 | Navegador del cliente abriendo la página IIS personalizada a través del portal RD Web / Web Client. |
+| 06a | `06a_iis_index_html_editor.png` | §6.2 | Archivo `index.html` abierto en el editor, mostrando el contenido guardado en UTF-8. |
+| 06b | `06b_iis_pagina_localhost.png` | §6.3 | Página personalizada cargando en `http://localhost` desde el propio servidor. |
+| 06 | `06_cliente_rdp_clasico.png` | §10.2 | Ventana RemoteApp clásica (archivo `.rdp`) mostrando la página IIS personalizada. |
+| 07 | `07_remoteapp_edge_publicado.png` | §7.1 | Propiedades del navegador publicado como RemoteApp, con el argumento `http://localhost` visible. |
+| 07_ssh | `07_ssh_nivel15.png` | §10.3 | Terminal del cliente con sesión SSH activa y prompt `Router#` — nivel de privilegio 15 asignado por RADIUS. |
+| 08 | `08_ssh_nivel1.png` | §10.4 | Terminal del cliente con sesión SSH activa y prompt `Router>` — nivel de privilegio 1 asignado por RADIUS. |
+| 09a | `09a_show_aaa_servers.png` | §9.2 | Salida de `show aaa servers` con el NPS en `State: current UP`. |
+| 09b | `09b_debug_radius_output.png` | §9.3 | Salida de `debug radius`/`debug aaa` durante un login, mostrando `Access-Accept` y el atributo `priv-lvl`. |
 
 ---
 
